@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/addfeature"
+        android:icon="@drawable/add_feature"
+        android:title="Add"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/filterfeature"
+        android:icon="@drawable/filter_feature"
+        android:title="Filter"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/sync"
+        android:icon="@drawable/sync"
+        android:title="Sync"
+        app:showAsAction="always" />
+
+</menu>

@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">GIS Demo</string>
+    <string name="default_latitude">18.1124</string>
+    <string name="default_longitude">79.0193</string>
+    <string name="title_activity_house">House Details</string>
+
+    <!-- Service URLs -->
+    <string name="featurelayer_url">https://services8.arcgis.com/flqcLZae9j3N2B8b/ArcGIS/rest/services/TelHydMad/FeatureServer/0</string>
+    <string name="featureservice_url">https://services8.arcgis.com/flqcLZae9j3N2B8b/ArcGIS/rest/services/TelHydMad/FeatureServer/</string>
+    <string name="geodatabase_directory">ArcGIS</string>
+    <string name="geodatabase_file">local.geodatabase</string>
+
+    <!-- House Labels -->
+    <string name="latitude">Latitude</string>
+    <string name="longitude">Longitude</string>
+    <string name="address1">Address 1</string>
+    <string name="address2">Address 2</string>
+    <string name="street">Street</string>
+    <string name="city">City</string>
+    <string name="state">State</string>
+    <string name="country">Country</string>
+    <string name="zipcode">Zipcode</string>
+
+</resources>
