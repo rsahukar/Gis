@@ -1,14 +1,17 @@
 package gis.rahul.activity;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.EditText;
 
+import java.io.IOException;
 import java.util.UUID;
 
 import gis.rahul.com.gis.R;
@@ -54,7 +57,7 @@ public class HouseActivity extends AppCompatActivity {
             populateActivity(house);
         } else if (action == Action.VIEW) {
             house = (House) getIntent().getSerializableExtra("house");
-            featureId = getIntent().getLongExtra("FEATUREID",0);
+            featureId = getIntent().getLongExtra("FEATUREID", 0);
             if (house != null) {
                 populateActivity(house);
             }
@@ -108,7 +111,6 @@ public class HouseActivity extends AppCompatActivity {
         saveFeature.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
-                house.setId(UUID.randomUUID().toString());
                 house.setLatitude(Float.parseFloat(latitude.getText().toString()));
                 house.setLongitude(Float.parseFloat(longitude.getText().toString()));
                 house.setAddress1(address1.getText().toString());
@@ -119,8 +121,14 @@ public class HouseActivity extends AppCompatActivity {
                 house.setCountry(country.getText().toString());
                 house.setZipcode(Long.parseLong(zipcode.getText().toString()));
                 Intent intent = new Intent();
+                if (action == Action.ADD) {
+                    house.setId(UUID.randomUUID().toString());
+                    intent.putExtra("ACTION", Action.ADD.getValue());
+                } else {
+                    intent.putExtra("FEATUREID", featureId);
+                    intent.putExtra("ACTION", Action.EDIT.getValue());
+                }
                 intent.putExtra("HOUSE", house);
-                intent.putExtra("ACTION", Action.ADD);
                 setResult(Activity.RESULT_OK, intent);
                 finish();
                 return true;
@@ -130,12 +138,11 @@ public class HouseActivity extends AppCompatActivity {
         deleteFeature.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem menuItem) {
-                String id = house.getId();
-                Intent intent = new Intent();
-                intent.putExtra("ACTION", Action.DELETE.getValue());
-                intent.putExtra("FEATUREID",featureId );
-                setResult(Activity.RESULT_OK, intent);
-                finish();
+                AlertDialog.Builder builder = new AlertDialog.Builder(HouseActivity.this);
+                builder.setMessage("Delete this house?")
+                        .setPositiveButton("Yes", dialogClickListener)
+                        .setNegativeButton("No", dialogClickListener).show();
+
                 return true;
             }
         });
@@ -143,13 +150,32 @@ public class HouseActivity extends AppCompatActivity {
         return true;
     }
 
+    DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+        @Override
+        public void onClick(DialogInterface dialog, int choice) {
+            switch (choice) {
+                case DialogInterface.BUTTON_POSITIVE:
+                    String id = house.getId();
+                    Intent intent = new Intent();
+                    intent.putExtra("ACTION", Action.DELETE.getValue());
+                    intent.putExtra("FEATUREID", featureId);
+                    setResult(Activity.RESULT_OK, intent);
+                    finish();
+                    break;
+                case DialogInterface.BUTTON_NEGATIVE:
+                    break;
+            }
+        }
+    };
+
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.editfeature:
                 setMenuItemStatuses(true);
                 break;
-                case R.id.deletefeature:
+            case R.id.deletefeature:
                 setMenuItemStatuses(true);
                 break;
             case R.id.savefeature:

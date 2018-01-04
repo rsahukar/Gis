@@ -3,13 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:anrdoid="http://schemas.android.com/apk/res-auto"
     tools:context="gis.rahul.activity.MainActivity">
 
     <com.esri.android.map.MapView
         android:id="@+id/mapview"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        >
+        android:layout_height="match_parent">
     </com.esri.android.map.MapView>
 
 </LinearLayout>

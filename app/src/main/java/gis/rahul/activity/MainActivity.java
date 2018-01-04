@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -39,18 +40,20 @@ import org.codehaus.jackson.type.TypeReference;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.List;
 import java.util.Map;
 
 import gis.rahul.com.gis.R;
 import gis.rahul.enums.ArcGisLayer;
 import gis.rahul.feature.House;
+import gis.rahul.fragment.LayerSelectFragment;
 import gis.rahul.utils.Action;
 import gis.rahul.utils.IntentCode;
 
 import static com.google.android.gms.plus.PlusOneDummyView.TAG;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LayerSelectFragment.LayerSelectInterface {
 
     private MapView mapView;
     private Geodatabase geodatabase = null;
@@ -75,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(gis.rahul.com.gis.R.layout.main);
+        setContentView(R.layout.main);
 
         geodatabase_file = getString(R.string.geodatabase_file);
         geodatabase_directory = getString(R.string.geodatabase_directory);
@@ -83,9 +86,9 @@ public class MainActivity extends AppCompatActivity {
         default_latitude = getString(R.string.default_latitude);
         default_longitude = getString(R.string.default_longitude);
 
-        mapView = (MapView) findViewById(R.id.mapview);
+        mapView = findViewById(R.id.mapview);
         //mapView.zoomToResolution(new Point(Double.parseDouble(default_latitude),Double.parseDouble(default_longitude)), 2);
-        mapView.zoomTo(new Point(Double.parseDouble(default_latitude), Double.parseDouble(default_longitude)), 1);
+        //mapView.centerAt(Double.parseDouble(default_latitude), Double.parseDouble(default_longitude), true);
 
         if (!checkPermission()) {
             requestPermission();
@@ -110,8 +113,24 @@ public class MainActivity extends AppCompatActivity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.mainmenu, menu);
 
-
         return true;
+    }
+
+    @Override
+    public void onDataPass(List<String> layers) {
+        for (int i = 1; i < mapView.getLayers().length; i++) {
+            mapView.getLayers()[i].setVisible(false);
+        }
+        List<String> allLayers = ArcGisLayer.getLayerDesc();
+        for (int i = 1; i < mapView.getLayers().length; i++) {
+            if (layers.contains(mapView.getLayers()[i].getName())) {
+                mapView.getLayers()[i].setVisible(true);
+            }
+        }
+    }
+
+    public interface OnDataPass {
+        public void onDataPass(String data);
     }
 
     @Override
@@ -122,6 +141,9 @@ public class MainActivity extends AppCompatActivity {
                 arcGisLayer = ArcGisLayer.HOUSE_LAYER;
                 break;
             case R.id.filterfeature:
+                FragmentManager fragmentManager = getSupportFragmentManager();
+                LayerSelectFragment dialog = new LayerSelectFragment();
+                dialog.show(fragmentManager, "LAYER_SELECT");
                 break;
             default:
                 break;
@@ -138,7 +160,6 @@ public class MainActivity extends AppCompatActivity {
             Feature selectedGraphic = null;
             GeodatabaseFeatureTable selectedLayer = null;
             touchedPoint = mapView.toMapPoint(x, y);
-            ;
 
             if (!addFeature) {
                 if (touchedPoint != null) {
@@ -183,10 +204,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        Action action = Action.valueOf(data.getIntExtra("ACTION", Action.VIEW.getValue()));
+        if (data != null) {
+            Action action = Action.valueOf(data.getIntExtra("ACTION", Action.VIEW.getValue()));
 
-        if (requestCode == IntentCode.ADD_HOUSE) {
-            if (data != null) {
+            if (requestCode == IntentCode.ADD_HOUSE) {
                 House house = (House) data.getSerializableExtra("HOUSE");
                 System.out.println(house);
                 GeodatabaseFeatureTable houseLayer = geodatabase
@@ -204,22 +225,40 @@ public class MainActivity extends AppCompatActivity {
                         addFeature = false;
                     } catch (TableException e) {
                         e.printStackTrace();
-                    } catch (Exception e) {
-                        e.printStackTrace();
                     }
                 }
-            }
-        } else if (requestCode == IntentCode.VIEW_HOUSE) {
-            if (action == Action.DELETE) {
-                Long houseId = data.getLongExtra("FEATUREID", 0);
-                GeodatabaseFeatureTable houseLayer = geodatabase
-                        .getGeodatabaseFeatureTableByLayerId(ArcGisLayer.HOUSE_LAYER.getValue());
-                if (houseLayer != null) {
-                    try {
-                        houseLayer.deleteFeature(houseId);
-                        Toast.makeText(getApplicationContext(), "Feature Deleted!!!", Toast.LENGTH_SHORT).show();
-                    } catch (TableException e) {
-                        e.printStackTrace();
+            } else if (requestCode == IntentCode.VIEW_HOUSE) {
+                if (action == Action.DELETE) {
+                    Long houseId = data.getLongExtra("FEATUREID", 0);
+                    GeodatabaseFeatureTable houseLayer = geodatabase
+                            .getGeodatabaseFeatureTableByLayerId(ArcGisLayer.HOUSE_LAYER.getValue());
+                    if (houseLayer != null) {
+                        try {
+                            houseLayer.deleteFeature(houseId);
+                            Toast.makeText(getApplicationContext(), "Feature Deleted!!!", Toast.LENGTH_SHORT).show();
+                        } catch (TableException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } else if (action == Action.EDIT) {
+                    Long houseId = data.getLongExtra("FEATUREID", 0);
+                    House house = (House) data.getSerializableExtra("HOUSE");
+                    GeodatabaseFeatureTable houseLayer = geodatabase
+                            .getGeodatabaseFeatureTableByLayerId(ArcGisLayer.HOUSE_LAYER.getValue());
+                    if (houseLayer != null) {
+                        GeodatabaseFeature gdbFeature;
+                        try {
+                            Map<String, Object> attributes;
+
+                            ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                            attributes = objectMapper.convertValue(house, new TypeReference<Map<String, Object>>() {
+                            });
+                            gdbFeature = new GeodatabaseFeature(attributes, touchedPoint, houseLayer);
+                            houseLayer.updateFeature(houseId, gdbFeature);
+                            addFeature = false;
+                        } catch (TableException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
@@ -304,7 +343,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void statusUpdated(final GeodatabaseStatusInfo status) {
 
-                int x = 10;
 
             }
         };
