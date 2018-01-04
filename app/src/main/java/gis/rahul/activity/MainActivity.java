@@ -37,8 +37,8 @@ import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 
+import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.HashMap;
 import java.util.Map;
 
 import gis.rahul.com.gis.R;
@@ -66,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
     private String service_url = null;
     private String geodatabase_file = null;
     private String geodatabase_directory = null;
+    private String geodatabase_path = null;
 
     private ArcGisLayer arcGisLayer = null;
 
@@ -93,10 +94,15 @@ public class MainActivity extends AppCompatActivity {
         ArcGISTiledMapServiceLayer gis = new ArcGISTiledMapServiceLayer("http://server.arcgisonline.com/arcgis/rest/services/World_Topo_Map/MapServer");
         mapView.addLayer(gis);
 
-        downloadData();
+        geodatabase_path = Environment.getExternalStorageDirectory().getPath() + "/" + geodatabase_directory + "/" + geodatabase_file;
+        File file = new File(geodatabase_path);
+        if (!file.exists()) {
+            downloadData();
+        } else {
+            updateFeatureLayer(geodatabase_path);
+        }
 
         mapView.setOnSingleTapListener(new MyOnSingleTapListener());
-
     }
 
     @Override
@@ -131,11 +137,11 @@ public class MainActivity extends AppCompatActivity {
         public void onSingleTap(float x, float y) {
             Feature selectedGraphic = null;
             GeodatabaseFeatureTable selectedLayer = null;
-            touchedPoint = new Point(x, y);
+            touchedPoint = mapView.toMapPoint(x, y);
+            ;
 
             if (!addFeature) {
-                Point mapPoint = mapView.toMapPoint(x, y);
-                if (mapPoint != null) {
+                if (touchedPoint != null) {
 
                     for (Layer layer : mapView.getLayers()) {
                         if (layer == null)
@@ -144,7 +150,6 @@ public class MainActivity extends AppCompatActivity {
                         if (layer instanceof FeatureLayer) {
                             GeodatabaseFeatureTable fLayer = (GeodatabaseFeatureTable) ((FeatureLayer) layer)
                                     .getFeatureTable();
-                            selectedLayer = fLayer;
 
                             selectedGraphic = GetFeature(
                                     (FeatureLayer) layer, x, y);
@@ -159,7 +164,8 @@ public class MainActivity extends AppCompatActivity {
 
                                 Intent intent = new Intent(MainActivity.this, HouseActivity.class);
                                 intent.putExtra("house", house);
-                                startActivity(intent);
+                                intent.putExtra("FEATUREID", Long.parseLong(selectedGraphic.getAttributeValue("OBJECTID").toString()));
+                                startActivityForResult(intent, IntentCode.VIEW_HOUSE);
                             }
                         }
                     }
@@ -177,6 +183,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+        Action action = Action.valueOf(data.getIntExtra("ACTION", Action.VIEW.getValue()));
+
         if (requestCode == IntentCode.ADD_HOUSE) {
             if (data != null) {
                 House house = (House) data.getSerializableExtra("HOUSE");
@@ -192,11 +200,25 @@ public class MainActivity extends AppCompatActivity {
                         attributes = objectMapper.convertValue(house, new TypeReference<Map<String, Object>>() {
                         });
                         gdbFeature = new GeodatabaseFeature(attributes, touchedPoint, houseLayer);
-                        long x = houseLayer.addFeature(gdbFeature);
-                        x = 10;
+                        houseLayer.addFeature(gdbFeature);
+                        addFeature = false;
                     } catch (TableException e) {
                         e.printStackTrace();
                     } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } else if (requestCode == IntentCode.VIEW_HOUSE) {
+            if (action == Action.DELETE) {
+                Long houseId = data.getLongExtra("FEATUREID", 0);
+                GeodatabaseFeatureTable houseLayer = geodatabase
+                        .getGeodatabaseFeatureTableByLayerId(ArcGisLayer.HOUSE_LAYER.getValue());
+                if (houseLayer != null) {
+                    try {
+                        houseLayer.deleteFeature(houseId);
+                        Toast.makeText(getApplicationContext(), "Feature Deleted!!!", Toast.LENGTH_SHORT).show();
+                    } catch (TableException e) {
                         e.printStackTrace();
                     }
                 }
@@ -287,8 +309,7 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        String geoDbPath = Environment.getExternalStorageDirectory().getPath() + "/" + geodatabase_directory + "/" + geodatabase_file;
-        submitTask(params, geoDbPath, statusCallback, gdbResponseCallback);
+        submitTask(params, geodatabase_path, statusCallback, gdbResponseCallback);
     }
 
     /**
@@ -315,11 +336,8 @@ public class MainActivity extends AppCompatActivity {
                     .getGeodatabaseTables()) {
                 if (gdbFeatureTable.hasGeometry()) {
                     FeatureLayer fl = new FeatureLayer(gdbFeatureTable);
-                    if (!fl.getName().equals("Carriageway")) {
-                        fl.setVisible(true);
-                        mapView.addLayer(fl);
-                    }
-
+                    fl.setVisible(true);
+                    mapView.addLayer(fl);
                 }
             }
         }

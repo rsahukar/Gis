@@ -16,8 +16,14 @@
         android:title="Refresh"
         app:showAsAction="always" />
     <item
-        android:id="@+id/cancel"
-        android:icon="@drawable/cancel"
+        android:id="@+id/deletefeature"
+        android:icon="@drawable/delete_feature"
+        android:orderInCategory="100"
+        android:title="Refresh"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/close"
+        android:icon="@drawable/close"
         android:orderInCategory="100"
         android:title="Refresh"
         app:showAsAction="always" />

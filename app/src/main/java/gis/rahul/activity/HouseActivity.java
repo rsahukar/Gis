@@ -9,6 +9,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.EditText;
 
+import java.util.UUID;
+
 import gis.rahul.com.gis.R;
 import gis.rahul.feature.House;
 import gis.rahul.utils.Action;
@@ -21,7 +23,8 @@ public class HouseActivity extends AppCompatActivity {
 
     private MenuItem editFeature;
     private MenuItem saveFeature;
-    private MenuItem cancelEdit;
+    private MenuItem deleteFeature;
+    private MenuItem closeEdit;
 
     private EditText latitude;
     private EditText longitude;
@@ -36,6 +39,7 @@ public class HouseActivity extends AppCompatActivity {
     private Action action;
 
     private House house;
+    private Long featureId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +54,7 @@ public class HouseActivity extends AppCompatActivity {
             populateActivity(house);
         } else if (action == Action.VIEW) {
             house = (House) getIntent().getSerializableExtra("house");
+            featureId = getIntent().getLongExtra("FEATUREID",0);
             if (house != null) {
                 populateActivity(house);
             }
@@ -90,18 +95,20 @@ public class HouseActivity extends AppCompatActivity {
 
         editFeature = activityMenu.findItem(R.id.editfeature);
         saveFeature = activityMenu.findItem(R.id.savefeature);
-        cancelEdit = activityMenu.findItem(R.id.cancel);
+        deleteFeature = activityMenu.findItem(R.id.deletefeature);
+        closeEdit = activityMenu.findItem(R.id.close);
 
         if (action == Action.ADD) {
             setMenuItemStatuses(true);
         } else if (action == Action.VIEW) {
-            cancelEdit.setVisible(false);
+            closeEdit.setVisible(false);
             saveFeature.setVisible(false);
         }
 
         saveFeature.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
+                house.setId(UUID.randomUUID().toString());
                 house.setLatitude(Float.parseFloat(latitude.getText().toString()));
                 house.setLongitude(Float.parseFloat(longitude.getText().toString()));
                 house.setAddress1(address1.getText().toString());
@@ -113,6 +120,20 @@ public class HouseActivity extends AppCompatActivity {
                 house.setZipcode(Long.parseLong(zipcode.getText().toString()));
                 Intent intent = new Intent();
                 intent.putExtra("HOUSE", house);
+                intent.putExtra("ACTION", Action.ADD);
+                setResult(Activity.RESULT_OK, intent);
+                finish();
+                return true;
+            }
+        });
+
+        deleteFeature.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem menuItem) {
+                String id = house.getId();
+                Intent intent = new Intent();
+                intent.putExtra("ACTION", Action.DELETE.getValue());
+                intent.putExtra("FEATUREID",featureId );
                 setResult(Activity.RESULT_OK, intent);
                 finish();
                 return true;
@@ -128,10 +149,13 @@ public class HouseActivity extends AppCompatActivity {
             case R.id.editfeature:
                 setMenuItemStatuses(true);
                 break;
+                case R.id.deletefeature:
+                setMenuItemStatuses(true);
+                break;
             case R.id.savefeature:
                 setMenuItemStatuses(false);
                 break;
-            case R.id.cancel:
+            case R.id.close:
                 setMenuItemStatuses(false);
                 break;
             default:
@@ -147,7 +171,7 @@ public class HouseActivity extends AppCompatActivity {
 
         editFeature.setVisible(!status);
         saveFeature.setVisible(status);
-        cancelEdit.setVisible(status);
+        closeEdit.setVisible(status);
 
         latitude.setEnabled(status);
         longitude.setEnabled(status);
