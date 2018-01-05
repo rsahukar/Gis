@@ -8,11 +8,11 @@ import java.util.List;
  */
 
 public enum ArcGisLayer {
-    HOUSE_LAYER(0,"house"),
-    TREE_LAYER(1,"tree"),
+    STATE_LAYER(0,"state"),
+    CITY_LAYER(1, "hyderabad"),
     REGION_LAYER(2,"madhapur"),
-    STATE_LAYER(3,"state"),
-    CITY_LAYER(4, "hyderabad");
+    HOUSE_LAYER(3,"house"),
+    TREE_LAYER(4,"tree");
 
     private int value;
     private String desc;
@@ -39,6 +39,18 @@ public enum ArcGisLayer {
             list.add(val.getDesc().toLowerCase());
         }
         return list;
+    }
+
+    public static ArcGisLayer getByDesc(String desc){
+        ArcGisLayer layer = null;
+
+        for(ArcGisLayer val : ArcGisLayer.values()) {
+            if(val.getDesc().equals(desc)){
+                layer = val;
+                break;
+            }
+        }
+        return layer;
     }
 
     public int getValue() {

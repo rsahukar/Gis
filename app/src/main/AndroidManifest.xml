@@ -33,6 +33,11 @@
             android:label="@string/title_activity_house"
             android:windowSoftInputMode="stateHidden"
             android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"></activity>
+        <activity
+            android:name="gis.rahul.activity.TreeActivity"
+            android:label="@string/title_activity_tree"
+            android:windowSoftInputMode="stateHidden"
+            android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"></activity>
     </application>
 
 </manifest>
